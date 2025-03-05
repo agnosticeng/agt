@@ -1,0 +1,8 @@
+bin
+tmp
+*.bin
+.DS_Store
+*.pyc
+.envrc
+*.so
+tmp

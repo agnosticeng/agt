@@ -1,0 +1,37 @@
+Engine:
+  Local:
+    Bundles:
+      # - https://github.com/agnosticeng/agnostic-clickhouse-udf/releases/download/v0.0.12/agnostic-clickhouse-udf_0.0.12_darwin_arm64.tar.gz
+      - file://../agnostic-clickhouse-udf/tmp/bundle.tar.gz
+    Settings:
+      default_table_engine: Log
+      allow_experimental_dynamic_type: 1
+      enable_named_columns_in_function_tuple: 1
+      max_execution_time: 300
+      send_logs_level: warning
+
+Init:
+  Queries:
+    - create_sink.sql
+    
+Source:
+  Query: source.sql
+
+Processors:
+  - Debug: {}
+  - Map: 
+      Queries:
+        - create_buffer.sql
+    Workers: 4
+  - Seq: {}
+  - Batch:
+      Queries:
+        - merge_buffers.sql
+      SizeQuery: buffers_size.sql
+      MaxWait: 5s
+      MaxSize: 100000
+  - Debug: {}
+  - Map: 
+      Queries:
+        - write_to_sink.sql
+        - delete_buffers.sql
