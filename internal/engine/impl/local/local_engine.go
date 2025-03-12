@@ -15,9 +15,11 @@ import (
 	"slices"
 	"sync"
 	"syscall"
+	"text/template"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/Masterminds/sprig"
 	"github.com/agnosticeng/agt/internal/ch"
 	"github.com/agnosticeng/agt/internal/engine"
 	"github.com/agnosticeng/agt/internal/utils"
@@ -37,6 +39,7 @@ type LocalEngineConfig struct {
 	ServerSettings map[string]any
 	Dsn            string
 	Settings       map[string]any
+	Vars           map[string]any
 }
 
 type LocalEngine struct {
@@ -61,6 +64,10 @@ func NewLocalEngine(ctx context.Context, conf LocalEngineConfig) (*LocalEngine, 
 		}
 
 		conf.BundlesPath = filepath.Join(path, "agnostic-blockchain-etl/bundles")
+	}
+
+	for k, v := range conf.Vars {
+		conf.Vars[strcase.ToScreamingSnake(k)] = v
 	}
 
 	if !filepath.IsAbs(conf.BinaryPath) {
@@ -152,9 +159,21 @@ func NewLocalEngine(ctx context.Context, conf LocalEngineConfig) (*LocalEngine, 
 		for _, remote := range conf.Bundles {
 			var local = filepath.Join(conf.BundlesPath, utils.SHA256Sum(remote))
 
-			logger.Debug("downloading bundle", "url", remote, "path", local)
+			t, err := template.New("").Funcs(sprig.FuncMap()).Parse(remote)
 
-			if err := utils.CachedDownload(ctx, remote, local); err != nil {
+			if err != nil {
+				return nil, err
+			}
+
+			remotePath, err := utils.RenderTemplate(t, "", conf.Vars)
+
+			if err != nil {
+				return nil, err
+			}
+
+			logger.Debug("downloading bundle", "url", remotePath, "path", local)
+
+			if err := utils.CachedDownload(ctx, remotePath, local); err != nil {
 				return nil, fmt.Errorf("error while downloading bundle %s: %w", remote, err)
 			}
 
