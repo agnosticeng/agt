@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
+	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/agnosticeng/agt/internal/utils"
 	"github.com/agnosticeng/concu/worker"
 	"github.com/agnosticeng/tallyctx"
 	"github.com/google/uuid"
@@ -50,9 +51,13 @@ func Run(
 
 	vars["UUID"] = runUUID.String()
 
-	if err := Init(ctx, engine, tmpl, vars, conf.Init); err != nil {
+	initVars, err := Init(ctx, engine, tmpl, vars, conf.Init)
+
+	if err != nil {
 		return err
 	}
+
+	vars = utils.MergeMaps(vars, initVars)
 
 	logger.Info("pipeline initialized")
 
@@ -111,6 +116,7 @@ func Run(
 							stepCtx,
 							engine,
 							tmpl,
+							vars,
 							inchan,
 							outchan,
 							procConfig,

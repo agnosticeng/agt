@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 
-	"github.com/agnosticeng/agnostic-etl-engine/internal/utils"
+	"github.com/agnosticeng/agt/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 

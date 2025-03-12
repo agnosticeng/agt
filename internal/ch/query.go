@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/utils"
+	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/agnosticeng/agt/internal/utils"
 	slogctx "github.com/veqryn/slog-context"
 )
 

@@ -18,9 +18,9 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/ch"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/utils"
+	"github.com/agnosticeng/agt/internal/ch"
+	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/agnosticeng/agt/internal/utils"
 	"github.com/iancoleman/strcase"
 	"github.com/mholt/archiver/v4"
 	slogctx "github.com/veqryn/slog-context"
@@ -104,7 +104,7 @@ func NewLocalEngine(ctx context.Context, conf LocalEngineConfig) (*LocalEngine, 
 		return nil, err
 	}
 
-	logger.Info("local clickhouse server will listen on %s:%s", u.Hostname(), u.Port())
+	logger.Info("local clickhouse server network config", "hostname", u.Hostname(), "port", u.Port())
 
 	var (
 		defaultSettings = map[string]interface{}{
@@ -228,7 +228,6 @@ func (eng *LocalEngine) Start() error {
 func (eng *LocalEngine) Stop() {
 	defer func() {
 		eng.logger.Info("closing connection pool")
-
 		conn, err := eng.connFunc()
 
 		if err == nil {

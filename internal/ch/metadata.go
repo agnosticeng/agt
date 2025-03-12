@@ -5,7 +5,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
+	"github.com/agnosticeng/agt/internal/engine"
 )
 
 func ProgressHandler(md *engine.QueryMetadata) func(*proto.Progress) {

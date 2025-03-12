@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
+	"github.com/agnosticeng/agt/internal/engine"
 	slogctx "github.com/veqryn/slog-context"
 )
 

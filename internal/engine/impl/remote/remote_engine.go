@@ -8,8 +8,8 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/ch"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
+	"github.com/agnosticeng/agt/internal/ch"
+	"github.com/agnosticeng/agt/internal/engine"
 	slogctx "github.com/veqryn/slog-context"
 )
 

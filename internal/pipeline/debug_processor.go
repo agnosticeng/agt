@@ -2,13 +2,16 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"reflect"
-	"slices"
 
 	slogctx "github.com/veqryn/slog-context"
 )
 
-type DebugProcessorConfig struct{}
+type DebugProcessorConfig struct {
+	Pretty bool
+}
 
 func DebugProcessor(
 	ctx context.Context,
@@ -34,10 +37,15 @@ func DebugProcessor(
 			case <-ctx.Done():
 				return nil
 			case outchan <- t:
-				logger.Info(
-					"debug",
-					slices.Concat([]any{"id", t.Id()}, mapToSlice(t.Vars))...,
-				)
+				var js []byte
+
+				if conf.Pretty {
+					js, _ = json.MarshalIndent(t, "", "    ")
+				} else {
+					js, _ = json.Marshal(t)
+				}
+
+				fmt.Println(string(js))
 			}
 		}
 	}

@@ -3,9 +3,9 @@ package impl
 import (
 	"context"
 
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine/impl/local"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine/impl/remote"
+	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/agnosticeng/agt/internal/engine/impl/local"
+	"github.com/agnosticeng/agt/internal/engine/impl/remote"
 )
 
 type EngineConfig struct {

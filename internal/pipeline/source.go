@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/ch"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/utils"
+	"github.com/agnosticeng/agt/internal/ch"
+	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/agnosticeng/agt/internal/utils"
 	slogctx "github.com/veqryn/slog-context"
 )
 
 type SourceConfig struct {
-	Query              string
+	Query              QueryFile
 	PollInterval       time.Duration
 	StopAfter          int
 	StopOnEmpty        bool
@@ -24,7 +24,7 @@ func Source(
 	ctx context.Context,
 	engine engine.Engine,
 	tmpl *template.Template,
-	vars map[string]interface{},
+	commonVars map[string]interface{},
 	outchan chan<- *Task,
 	conf SourceConfig,
 ) error {
@@ -52,11 +52,11 @@ func Source(
 				ctx,
 				engine,
 				tmpl,
-				conf.Query,
-				utils.MergeMaps(vars, lastRow),
+				conf.Query.Path,
+				utils.MergeMaps(commonVars, lastRow),
 			)
 
-			if err != nil {
+			if err != nil && !conf.Query.IgnoreFailure {
 				return err
 			}
 
@@ -73,7 +73,7 @@ func Source(
 				var t = Task{
 					SequenceNumberStart: nextSequenceNumber,
 					SequenceNumberEnd:   nextSequenceNumber,
-					Vars:                utils.MergeMaps(vars, row),
+					Vars:                row,
 				}
 
 				select {
@@ -84,6 +84,7 @@ func Source(
 
 				nextSequenceNumber++
 			}
+
 			iterations++
 			nextWaitDuration = conf.PollInterval
 			lastRow = rows[len(rows)-1]

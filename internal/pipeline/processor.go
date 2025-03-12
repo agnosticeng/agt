@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
+	"github.com/agnosticeng/agt/internal/engine"
 )
 
 type ProcessorConfig struct {
@@ -39,6 +39,7 @@ func Processor(
 	ctx context.Context,
 	engine engine.Engine,
 	tmpl *template.Template,
+	commonVars map[string]any,
 	inchan <-chan *Task,
 	outchan chan<- *Task,
 	conf ProcessorConfig,
@@ -49,6 +50,7 @@ func Processor(
 			ctx,
 			engine,
 			tmpl,
+			commonVars,
 			inchan,
 			outchan,
 			*conf.Map,
@@ -83,6 +85,7 @@ func Processor(
 			ctx,
 			engine,
 			tmpl,
+			commonVars,
 			inchan,
 			outchan,
 			*conf.Batch,

@@ -10,6 +10,7 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/agnosticeng/objstr"
 	"github.com/agnosticeng/objstr/utils"
+	"github.com/samber/lo"
 )
 
 func RenderTemplate(tmpl *template.Template, name string, vars map[string]interface{}) (string, error) {
@@ -25,7 +26,12 @@ func RenderTemplate(tmpl *template.Template, name string, vars map[string]interf
 func LoadTemplates(ctx context.Context, target *url.URL) (*template.Template, error) {
 	var (
 		os   = objstr.FromContextOrDefault(ctx)
-		tmpl = template.New("pipeline").Option("missingkey=default").Funcs(sprig.FuncMap())
+		tmpl = template.New("pipeline").
+			Option("missingkey=default").
+			Funcs(lo.Assign(
+				sprig.FuncMap(),
+				FuncMap(),
+			))
 	)
 
 	files, err := os.ListPrefix(ctx, target)

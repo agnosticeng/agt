@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/agnosticeng/agnostic-etl-engine/internal/ch"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine/impl"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/pipeline"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/utils"
+	"github.com/agnosticeng/agt/internal/ch"
+	"github.com/agnosticeng/agt/internal/engine/impl"
+	"github.com/agnosticeng/agt/internal/pipeline"
+	"github.com/agnosticeng/agt/internal/utils"
 	"github.com/agnosticeng/cnf"
 	"github.com/agnosticeng/cnf/providers/env"
 	"github.com/agnosticeng/objstr"
@@ -64,6 +64,7 @@ func Command() *cli.Command {
 				&cfg,
 				cnf.WithProvider(objstrutils.NewCnfProvider(objstr.FromContextOrDefault(sigCtx), path)),
 				cnf.WithProvider(env.NewEnvProvider("AGN")),
+				cnf.WithMapstructureHooks(pipeline.StringToQueryFileHookFunc()),
 			); err != nil {
 				return err
 			}

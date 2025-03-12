@@ -7,16 +7,17 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/ch"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
+	"github.com/agnosticeng/agt/internal/ch"
+	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/agnosticeng/agt/internal/utils"
 	"github.com/agnosticeng/tallyctx"
 	"github.com/samber/lo"
 	slogctx "github.com/veqryn/slog-context"
 )
 
 type BatchProcessorConfig struct {
-	Queries            []string
-	SizeQuery          string
+	Queries            []QueryFile
+	SizeQuery          QueryFile
 	MaxWait            time.Duration
 	MaxSize            uint64
 	ClickhouseSettings map[string]any
@@ -30,6 +31,7 @@ func BatchProcessor(
 	ctx context.Context,
 	engine engine.Engine,
 	tmpl *template.Template,
+	commonVars map[string]any,
 	inchan <-chan *Task,
 	outchan chan<- *Task,
 	conf BatchProcessorConfig,
@@ -39,12 +41,22 @@ func BatchProcessor(
 	}
 
 	var (
-		logger         = slogctx.FromCtx(ctx)
-		stageMetrics   = ch.NewStageMetrics(tallyctx.FromContextOrNoop(ctx), conf.Queries)
-		queriesMetrics = lo.Map(conf.Queries, func(query string, i int) *ch.QueryMetrics {
-			return ch.NewQueryMetrics(tallyctx.FromContextOrNoop(ctx).Tagged(map[string]string{"query": query}))
-		})
-		sizeQueryMetrics = ch.NewQueryMetrics(tallyctx.FromContextOrNoop(ctx).Tagged(map[string]string{"query": conf.SizeQuery}))
+		logger       = slogctx.FromCtx(ctx)
+		stageMetrics = ch.NewStageMetrics(
+			tallyctx.FromContextOrNoop(ctx),
+			lo.Map(conf.Queries, func(q QueryFile, _ int) string {
+				return q.Path
+			}),
+		)
+		queriesMetrics = lo.Map(
+			conf.Queries,
+			func(query QueryFile, i int) *ch.QueryMetrics {
+				return ch.NewQueryMetrics(tallyctx.FromContextOrNoop(ctx).Tagged(map[string]string{"query": query.Path}))
+			},
+		)
+		sizeQueryMetrics = ch.NewQueryMetrics(
+			tallyctx.FromContextOrNoop(ctx).Tagged(map[string]string{"query": conf.SizeQuery.Path}),
+		)
 	)
 
 	logger.Debug("started")
@@ -78,27 +90,33 @@ func BatchProcessor(
 			if currentBatch == nil {
 				currentBatch = &Task{}
 				currentBatchSize = 0
-				currentBatchTimer = time.NewTimer(conf.MaxWait)
+
+				if conf.MaxWait > 0 {
+					currentBatchTimer = time.NewTimer(conf.MaxWait)
+				}
 			}
 
-			var vars = map[string]any{
-				"LEFT":  currentBatch.Vars,
-				"RIGHT": t.Vars,
-			}
+			var vars = utils.MergeMaps(
+				map[string]any{
+					"LEFT":  currentBatch.Vars,
+					"RIGHT": t.Vars,
+				},
+				commonVars,
+			)
 
 			for i, query := range conf.Queries {
 				rows, err := ch.QueryTemplateWithMetricsAndLogger(
 					ctx,
 					engine,
 					tmpl,
-					query,
+					query.Path,
 					vars,
 					stageMetrics,
 					queriesMetrics[i],
 					logger.With("query", query),
 				)
 
-				if err != nil {
+				if err != nil && !query.IgnoreFailure {
 					logger.Error(err.Error())
 					return err
 				}
@@ -111,15 +129,15 @@ func BatchProcessor(
 			currentBatch.SequenceNumberStart = min(currentBatch.SequenceNumberStart, t.SequenceNumberStart)
 			currentBatch.SequenceNumberEnd = max(currentBatch.SequenceNumberEnd, t.SequenceNumberEnd)
 
-			if len(conf.SizeQuery) == 0 {
+			if len(conf.SizeQuery.Path) == 0 {
 				currentBatchSize++
 			} else {
 				rows, err := ch.QueryTemplateWithMetricsAndLogger(
 					ctx,
 					engine,
 					tmpl,
-					conf.SizeQuery,
-					currentBatch.Vars,
+					conf.SizeQuery.Path,
+					utils.MergeMaps(currentBatch.Vars, commonVars),
 					stageMetrics,
 					sizeQueryMetrics,
 					logger.With("query", conf.SizeQuery),

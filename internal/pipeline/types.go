@@ -2,8 +2,12 @@ package pipeline
 
 import (
 	"fmt"
+	"net/url"
+	"reflect"
 	"sort"
 	"strconv"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type Task struct {
@@ -32,37 +36,49 @@ func (ts *Tasks) Insert(t *Task) {
 	(*ts)[i] = t
 }
 
-// var t0 = Task{
-// 	SequenceNumberStart: 0,
-// 	SequenceNumberEnd:   0,
-// 	Vars: map[string]any{
-// 		"RANGE_START": 0,
-// 		"RANGE_END":   9,
-// 		"BUFFER": "buf_0_9",
-// 	},
-// }
+type QueryFile struct {
+	Path          string
+	IgnoreFailure bool
+}
 
-// var t1 = Task{
-// 	SequenceNumberStart: 1,
-// 	SequenceNumberEnd:   1,
-// 	Vars: map[string]any{
-// 		"RANGE_START": 10,
-// 		"RANGE_END":   19,
-// 		"BUFFER": "buf_10_19",
-// 	},
-// }
+func ParseQueryFile(s string) (*QueryFile, error) {
+	var res QueryFile
+	u, err := url.Parse(s)
 
-// select
-// 	least([{{.LEFT.RANGE_START}}, {{.RIGHT.RANGE_START}}]) as RANGE_START,
-// 	greatest([{{.LEFT.RANGE_END}}, {{.RIGHT.RANGE_END}}]) AS RANGE_END,
-// 	arrayConcat({{.LEFT.BUFFER}}, {{.RIGHT.BUFFER}})
+	if err != nil {
+		return nil, err
+	}
 
-// var t0_1 = Task{
-// 	SequenceNumberStart: 0,
-// 	SequenceNumberEnd:   1,
-// 	Vars: map[string]any{
-// 		"RANGE_START": 0,
-// 		"RANGE_END":   19,
-// 		"BUFFERS": ["buf_0_9", "buf_10_19"]
-// 	},
-// }
+	q, err := url.ParseQuery(u.Fragment)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if v := q.Get("ignore-failure"); len(v) > 0 {
+		if b, err := strconv.ParseBool(v); err == nil {
+			res.IgnoreFailure = b
+		}
+	}
+
+	u.Fragment = ""
+	u.RawFragment = ""
+	res.Path = u.String()
+	return &res, nil
+}
+
+func StringToQueryFileHookFunc() mapstructure.DecodeHookFunc {
+	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+		if (f.Kind() != reflect.String) || (t != reflect.TypeOf(QueryFile{})) {
+			return data, nil
+		}
+
+		qf, err := ParseQueryFile(data.(string))
+
+		if err != nil {
+			return nil, err
+		}
+
+		return qf, nil
+	}
+}

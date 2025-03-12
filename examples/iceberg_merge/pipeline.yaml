@@ -1,0 +1,37 @@
+Engine:
+  Local:
+    Bundles:
+      - file://../agnostic-clickhouse-udf/tmp/bundle.tar.gz
+      - file://../icepq/tmp/bundle.tar.gz#disable-cache=true
+    Settings:
+      default_table_engine: Log
+      allow_experimental_dynamic_type: 1
+      enable_named_columns_in_function_tuple: 1
+      max_execution_time: 3600
+      send_logs_level: warning
+      schema_inference_make_columns_nullable: auto
+      max_bytes_before_external_sort: 2294967296
+
+Init:
+  Queries:
+    - init.sql
+
+Source:
+  Query: source.sql
+  StopOnEmpty: true
+
+Processors:
+  - Debug:
+      Pretty: true
+  - Map:
+      Queries:
+        - merge_files.sql
+  - Batch:
+      MaxSize: 10
+      Queries:
+        - merge_merges.sql
+  - Debug:
+      Pretty: true 
+  - Map: 
+      Queries:
+        - merge_table.sql

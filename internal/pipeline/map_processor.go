@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/ch"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
+	"github.com/agnosticeng/agt/internal/ch"
+	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/agnosticeng/agt/internal/utils"
 	"github.com/agnosticeng/tallyctx"
 	"github.com/samber/lo"
 	slogctx "github.com/veqryn/slog-context"
 )
 
 type MapProcessorConfig struct {
-	Queries            []string
+	Queries            []QueryFile
 	ClickhouseSettings map[string]any
 }
 
@@ -26,16 +27,25 @@ func MapProcessor(
 	ctx context.Context,
 	engine engine.Engine,
 	tmpl *template.Template,
+	commonVars map[string]any,
 	inchan <-chan *Task,
 	outchan chan<- *Task,
 	conf MapProcessorConfig,
 ) error {
 	var (
-		logger         = slogctx.FromCtx(ctx)
-		stageMetrics   = ch.NewStageMetrics(tallyctx.FromContextOrNoop(ctx), conf.Queries)
-		queriesMetrics = lo.Map(conf.Queries, func(query string, i int) *ch.QueryMetrics {
-			return ch.NewQueryMetrics(tallyctx.FromContextOrNoop(ctx).Tagged(map[string]string{"query": query}))
-		})
+		logger       = slogctx.FromCtx(ctx)
+		stageMetrics = ch.NewStageMetrics(
+			tallyctx.FromContextOrNoop(ctx),
+			lo.Map(conf.Queries, func(f QueryFile, _ int) string {
+				return f.Path
+			}),
+		)
+		queriesMetrics = lo.Map(
+			conf.Queries,
+			func(query QueryFile, i int) *ch.QueryMetrics {
+				return ch.NewQueryMetrics(tallyctx.FromContextOrNoop(ctx).Tagged(map[string]string{"query": query.Path}))
+			},
+		)
 	)
 
 	logger.Debug("started")
@@ -59,14 +69,14 @@ func MapProcessor(
 					ctx,
 					engine,
 					tmpl,
-					query,
-					t.Vars,
+					query.Path,
+					utils.MergeMaps(t.Vars, commonVars),
 					stageMetrics,
 					queriesMetrics[i],
 					logger.With("query", query),
 				)
 
-				if err != nil {
+				if err != nil && !query.IgnoreFailure {
 					logger.Error(err.Error())
 					return err
 				}

@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/agnosticeng/agnostic-etl-engine/cmd/render"
-	"github.com/agnosticeng/agnostic-etl-engine/cmd/run"
+	"github.com/agnosticeng/agt/cmd/render"
+	"github.com/agnosticeng/agt/cmd/run"
 	"github.com/agnosticeng/cliutils"
 	"github.com/agnosticeng/cnf"
 	"github.com/agnosticeng/cnf/providers/env"

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/agnosticeng/agnostic-etl-engine/internal/engine"
+	"github.com/agnosticeng/agt/internal/engine"
 	"github.com/iancoleman/strcase"
 )
 

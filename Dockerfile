@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 
 FROM debian:bullseye
-LABEL org.opencontainers.image.source=https://github.com/agnosticeng/agnostic-etl-engine
+LABEL org.opencontainers.image.source=https://github.com/agnosticeng/agt
 ARG CLICKHOUSE_VERSION
 
 COPY --from=build /code/bin/* /
@@ -24,4 +24,4 @@ COPY --from=build /code/clickhouse-common-static-${CLICKHOUSE_VERSION}/usr/bin/c
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 RUN update-ca-certificates
 
-ENTRYPOINT ["/agnostic-etl-engine"]
+ENTRYPOINT ["/agt"]

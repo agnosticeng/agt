@@ -1,7 +1,7 @@
 all: test build
 
 build: 
-	go build -o bin/agnostic-etl-engine ./cmd
+	go build -o bin/agt ./cmd
 
 test:
 	go test -v ./...
