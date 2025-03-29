@@ -18,7 +18,6 @@ LABEL org.opencontainers.image.source=https://github.com/agnosticeng/agt
 ARG CLICKHOUSE_VERSION
 
 COPY --from=build /code/bin/* /
-COPY --from=build /code/examples /examples
 COPY --from=build /code/clickhouse-common-static-${CLICKHOUSE_VERSION}/usr/bin/clickhouse /usr/bin/clickhouse
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
