@@ -7,13 +7,13 @@ import (
 	slogctx "github.com/veqryn/slog-context"
 )
 
-type SeqProcessorConfig struct{}
+type SequenceProcessorConfig struct{}
 
-func SeqProcessor(
+func SequenceProcessor(
 	ctx context.Context,
 	inchan <-chan *Task,
 	outchan chan<- *Task,
-	conf SeqProcessorConfig,
+	conf SequenceProcessorConfig,
 ) error {
 	var (
 		buf                Tasks

@@ -4,13 +4,16 @@ import (
 	"context"
 	"text/template"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/agnosticeng/agt/internal/ch"
 	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/agnosticeng/agt/internal/utils"
 	slogctx "github.com/veqryn/slog-context"
 )
 
 type InitConfig struct {
-	Queries []QueryFile
+	Queries            []ch.QueryRef
+	ClickhouseSettings map[string]any
 }
 
 func (conf InitConfig) WithDefaults() InitConfig {
@@ -26,19 +29,16 @@ func Init(
 ) (map[string]any, error) {
 	var logger = slogctx.FromCtx(ctx)
 
-	for i, query := range conf.Queries {
-		rows, _, err := ch.QueryFromTemplate(ctx, engine, tmpl, query.Path, vars)
-
-		if err != nil && !query.IgnoreFailure {
-			return nil, err
-		}
-
-		if i == (len(conf.Queries)-1) && len(rows) > 0 {
-			logger.Info("init vars", mapToSlice(rows[len(rows)-1])...)
-			return rows[len(rows)-1], nil
-		}
-
+	if len(conf.ClickhouseSettings) > 0 {
+		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(ch.NormalizeSettings(conf.ClickhouseSettings)))
 	}
 
-	return nil, nil
+	rows, err := ch.RunQueries(ctx, engine, tmpl, conf.Queries, vars, nil, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("init vars", mapToSlice(utils.LastElemOrZero(rows))...)
+	return utils.LastElemOrZero(rows), nil
 }

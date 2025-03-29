@@ -2,12 +2,8 @@ package pipeline
 
 import (
 	"fmt"
-	"net/url"
-	"reflect"
 	"sort"
 	"strconv"
-
-	"github.com/mitchellh/mapstructure"
 )
 
 type Task struct {
@@ -34,51 +30,4 @@ func (ts *Tasks) Insert(t *Task) {
 	*ts = append(*ts, nil)
 	copy((*ts)[i+1:], (*ts)[i:])
 	(*ts)[i] = t
-}
-
-type QueryFile struct {
-	Path          string
-	IgnoreFailure bool
-}
-
-func ParseQueryFile(s string) (*QueryFile, error) {
-	var res QueryFile
-	u, err := url.Parse(s)
-
-	if err != nil {
-		return nil, err
-	}
-
-	q, err := url.ParseQuery(u.Fragment)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if v := q.Get("ignore-failure"); len(v) > 0 {
-		if b, err := strconv.ParseBool(v); err == nil {
-			res.IgnoreFailure = b
-		}
-	}
-
-	u.Fragment = ""
-	u.RawFragment = ""
-	res.Path = u.String()
-	return &res, nil
-}
-
-func StringToQueryFileHookFunc() mapstructure.DecodeHookFunc {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-		if (f.Kind() != reflect.String) || (t != reflect.TypeOf(QueryFile{})) {
-			return data, nil
-		}
-
-		qf, err := ParseQueryFile(data.(string))
-
-		if err != nil {
-			return nil, err
-		}
-
-		return qf, nil
-	}
 }

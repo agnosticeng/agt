@@ -34,13 +34,13 @@ func NewQueryMetrics(scope tally.Scope) *QueryMetrics {
 	}
 }
 
-type StageMetrics struct {
+type ProcessorMetrics struct {
 	Active           tally.Gauge
 	OutChanQueueTime tally.Histogram
 }
 
-func NewStageMetrics(scope tally.Scope, queries []string) *StageMetrics {
-	return &StageMetrics{
+func NewProcessorMetrics(scope tally.Scope) *ProcessorMetrics {
+	return &ProcessorMetrics{
 		Active: scope.Gauge("active"),
 		OutChanQueueTime: scope.Histogram(
 			"out_chan_queue_time",

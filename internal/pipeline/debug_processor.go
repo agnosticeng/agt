@@ -55,7 +55,7 @@ func mapToSlice(m map[string]any) []any {
 	var res []any
 
 	for k, v := range m {
-		if reflect.TypeOf(v).Kind() == reflect.Pointer {
+		if reflect.TypeOf(v).Kind() == reflect.Pointer || reflect.TypeOf(v).Kind() == reflect.Pointer {
 			if val := reflect.ValueOf(v); !val.IsNil() {
 				v = val.Elem().Interface()
 			}

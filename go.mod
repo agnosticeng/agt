@@ -6,7 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.29.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/agnosticeng/cliutils v0.1.0
-	github.com/agnosticeng/cnf v0.1.0
+	github.com/agnosticeng/cnf v0.2.0
 	github.com/agnosticeng/concu v0.0.2
 	github.com/agnosticeng/objstr v0.1.5
 	github.com/agnosticeng/panicsafe v0.5.0
@@ -100,7 +100,7 @@ require (
 	golang.org/x/net v0.37.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	google.golang.org/protobuf v1.36.1 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

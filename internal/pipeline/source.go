@@ -13,7 +13,7 @@ import (
 )
 
 type SourceConfig struct {
-	Query              QueryFile
+	Query              ch.QueryRef
 	PollInterval       time.Duration
 	StopAfter          int
 	StopOnEmpty        bool
@@ -48,15 +48,17 @@ func Source(
 		case <-ctx.Done():
 			return nil
 		case <-time.After(nextWaitDuration):
-			rows, _, err := ch.QueryFromTemplate(
+			rows, err := ch.RunQuery(
 				ctx,
 				engine,
 				tmpl,
-				conf.Query.Path,
+				conf.Query,
 				utils.MergeMaps(commonVars, lastRow),
+				nil,
+				nil,
 			)
 
-			if err != nil && !conf.Query.IgnoreFailure {
+			if err != nil {
 				return err
 			}
 

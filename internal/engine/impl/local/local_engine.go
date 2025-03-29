@@ -128,12 +128,6 @@ func NewLocalEngine(ctx context.Context, conf LocalEngineConfig) (*LocalEngine, 
 					"password": "",
 				},
 			},
-			"s3": map[string]interface{}{
-				"ovh-rbx": map[string]interface{}{
-					"endpoint": "https://s3.rbx.io.cloud.ovh.net",
-					"region":   "rbx",
-				},
-			},
 		}
 		finalSettings = make(map[string]interface{})
 	)
@@ -323,7 +317,7 @@ func (eng *LocalEngine) Query(ctx context.Context, query string, args ...any) ([
 		args...,
 	)
 
-	if errors.Is(err, io.EOF) && !ch.IsSelectQuery(query) {
+	if errors.Is(err, io.EOF) && !ch.IsDataQuery(query) {
 		return nil, &md, nil
 	}
 

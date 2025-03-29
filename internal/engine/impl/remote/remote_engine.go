@@ -78,7 +78,7 @@ func (eng *RemoteEngine) Query(ctx context.Context, query string, args ...any) (
 		args...,
 	)
 
-	if errors.Is(err, io.EOF) && !ch.IsSelectQuery(query) {
+	if errors.Is(err, io.EOF) && !ch.IsDataQuery(query) {
 		return nil, &md, nil
 	}
 

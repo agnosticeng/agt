@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 	"github.com/agnosticeng/agt/internal/engine"
 	"github.com/agnosticeng/agt/internal/utils"
+	"github.com/samber/lo"
 	slogctx "github.com/veqryn/slog-context"
 )
 
-func IsSelectQuery(query string) bool {
+func IsDataQuery(query string) bool {
 	query = strings.ToUpper(query)
 	query = strings.TrimLeft(query, " ")
 
@@ -27,39 +29,6 @@ func IsSelectQuery(query string) bool {
 	default:
 		return false
 	}
-}
-
-func QueryFromTemplate(
-	ctx context.Context,
-	engine engine.Engine,
-	tmpl *template.Template,
-	name string,
-	vars map[string]any,
-) ([]map[string]any, *engine.QueryMetadata, error) {
-	var (
-		logger = slogctx.FromCtx(ctx)
-		res    []map[string]any
-	)
-
-	q, err := utils.RenderTemplate(tmpl, name, vars)
-
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to render %s template: %w", name, err)
-	}
-
-	if logger.Enabled(ctx, slog.Level(-10)) {
-		logger.Log(ctx, -10, q, "template", name)
-	}
-
-	res, md, err := engine.Query(ctx, q)
-
-	LogQueryMetadata(ctx, logger, slog.LevelDebug, name, md)
-
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to execute template %s: %w", name, err)
-	}
-
-	return res, md, nil
 }
 
 func RowsToMaps(rows driver.Rows) ([]map[string]interface{}, error) {
@@ -97,40 +66,102 @@ func RowsToMaps(rows driver.Rows) ([]map[string]interface{}, error) {
 	return res, nil
 }
 
-func QueryTemplateWithMetricsAndLogger(
+func RunQuery(
 	ctx context.Context,
 	engine engine.Engine,
 	tmpl *template.Template,
-	name string,
+	query QueryRef,
 	vars map[string]any,
-	stageMetrics *StageMetrics,
+	procMetrics *ProcessorMetrics,
 	queryMetrics *QueryMetrics,
-	logger *slog.Logger,
 ) ([]map[string]any, error) {
-	var t0 = time.Now()
-	stageMetrics.Active.Update(1)
-	defer stageMetrics.Active.Update(0)
-
-	rows, md, err := QueryFromTemplate(
-		ctx,
-		engine,
-		tmpl,
-		name,
-		vars,
+	var (
+		t0     = time.Now()
+		logger = slogctx.FromCtx(ctx).With("query", query.Name)
 	)
 
+	q, err := utils.RenderTemplate(tmpl, query.Name, vars)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to render %s template: %w", query.Name, err)
 	}
 
-	queryMetrics.ExecutionTime.RecordDuration(time.Since(t0))
-	queryMetrics.Elapsed.RecordDuration(md.Elapsed)
-	queryMetrics.Rows.Inc(int64(md.Rows))
-	queryMetrics.Bytes.Inc(int64(md.Bytes))
-	queryMetrics.TotalRows.Inc(int64(md.TotalRows))
-	queryMetrics.WroteRows.Inc(int64(md.WroteRows))
-	queryMetrics.WroteBytes.Inc(int64(md.WroteBytes))
+	if logger.Enabled(ctx, slog.Level(-10)) {
+		logger.Log(ctx, -10, strings.ReplaceAll(q, "\n", " "), "template", q)
+	}
 
-	logger.Debug(name, "duration", time.Since(t0))
-	return rows, nil
+	if procMetrics != nil {
+		procMetrics.Active.Update(1)
+		defer procMetrics.Active.Update(0)
+	}
+
+	res, md, err := engine.Query(ctx, q)
+
+	logger.Debug(
+		"summary",
+		"rows", md.Rows,
+		"bytes", md.Bytes,
+		"total_rows", md.TotalRows,
+		"wrote_rows", md.WroteRows,
+		"wrote_bytes", md.WroteBytes,
+		"elapsed", md.Elapsed,
+	)
+
+	if err != nil && !query.IgnoreFailure {
+		if ex, ok := lo.ErrorsAs[*proto.Exception](err); !ok || !lo.Contains(query.IgnoreErrorCodes, int(ex.Code)) {
+			return nil, fmt.Errorf("failed to execute query %s: %w", query.Name, err)
+		}
+	}
+
+	if queryMetrics != nil {
+		queryMetrics.ExecutionTime.RecordDuration(time.Since(t0))
+		queryMetrics.Elapsed.RecordDuration(md.Elapsed)
+		queryMetrics.Rows.Inc(int64(md.Rows))
+		queryMetrics.Bytes.Inc(int64(md.Bytes))
+		queryMetrics.TotalRows.Inc(int64(md.TotalRows))
+		queryMetrics.WroteRows.Inc(int64(md.WroteRows))
+		queryMetrics.WroteBytes.Inc(int64(md.WroteBytes))
+	}
+
+	return res, nil
+}
+
+func RunQueries(
+	ctx context.Context,
+	engine engine.Engine,
+	tmpl *template.Template,
+	queries []QueryRef,
+	vars map[string]any,
+	procMetrics *ProcessorMetrics,
+	queriesMetrics []*QueryMetrics,
+) ([]map[string]any, error) {
+	var resVars []map[string]any
+
+	for i, query := range queries {
+		var queryMetrics *QueryMetrics
+
+		if len(queriesMetrics) > 0 {
+			queryMetrics = queriesMetrics[i]
+		}
+
+		rows, err := RunQuery(
+			ctx,
+			engine,
+			tmpl,
+			query,
+			vars,
+			procMetrics,
+			queryMetrics,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(rows) > 0 {
+			resVars = rows
+		}
+	}
+
+	return resVars, nil
 }

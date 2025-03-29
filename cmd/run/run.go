@@ -50,7 +50,6 @@ func Command() *cli.Command {
 				path                 = ctx.Args().Get(0)
 				templatePath         = ctx.String("template-path")
 				vars                 = utils.ParseKeyValues(ctx.StringSlice("var"), "=")
-				cfg                  config
 				sigCtx, sigCtxCancel = signal.NotifyContext(ctx.Context, os.Interrupt, syscall.SIGTERM)
 			)
 
@@ -60,12 +59,13 @@ func Command() *cli.Command {
 				return fmt.Errorf("pipeline path must be specified")
 			}
 
-			if err := cnf.Load(
-				&cfg,
+			conf, err := cnf.LoadStruct[config](
 				cnf.WithProvider(objstrutils.NewCnfProvider(objstr.FromContextOrDefault(sigCtx), path)),
-				cnf.WithProvider(env.NewEnvProvider("AGN")),
-				cnf.WithMapstructureHooks(pipeline.StringToQueryFileHookFunc()),
-			); err != nil {
+				cnf.WithProvider(env.NewEnvProvider("AGT")),
+				cnf.WithMapstructureHooks(ch.StringToQueryRefHookFunc()),
+			)
+
+			if err != nil {
 				return err
 			}
 
@@ -102,18 +102,18 @@ func Command() *cli.Command {
 
 			defer scopeCloser.Close()
 
-			if len(cfg.PromAddr) == 0 {
-				cfg.PromAddr = ":9999"
+			if len(conf.PromAddr) == 0 {
+				conf.PromAddr = ":9999"
 			}
 
 			go func() {
-				logger.Info("prometheus HTTP server started", "addr", cfg.PromAddr)
-				http.ListenAndServe(cfg.PromAddr, promhttp.Handler())
+				logger.Info("prometheus HTTP server started", "addr", conf.PromAddr)
+				http.ListenAndServe(conf.PromAddr, promhttp.Handler())
 			}()
 
 			pipelineCtx = tallyctx.NewContext(pipelineCtx, scope)
 
-			engine, err := impl.NewEngine(pipelineCtx, cfg.Engine)
+			engine, err := impl.NewEngine(pipelineCtx, conf.Engine)
 
 			if err != nil {
 				return err
@@ -140,7 +140,7 @@ func Command() *cli.Command {
 			group.Go(panicsafe.Func(func() error {
 				defer engine.Stop()
 
-				if err := ch.RunStartupProbe(groupCtx, engine, cfg.StartupProbe); err != nil {
+				if err := ch.RunStartupProbe(groupCtx, engine, conf.StartupProbe); err != nil {
 					return err
 				}
 
@@ -149,7 +149,7 @@ func Command() *cli.Command {
 					engine,
 					tmpl,
 					vars,
-					cfg.PipelineConfig,
+					conf.PipelineConfig,
 				)
 			}))
 
