@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
+	"github.com/agnosticeng/agt/internal/utils"
 	slogctx "github.com/veqryn/slog-context"
 )
 
@@ -55,13 +55,13 @@ func mapToSlice(m map[string]any) []any {
 	var res []any
 
 	for k, v := range m {
-		if reflect.TypeOf(v).Kind() == reflect.Pointer || reflect.TypeOf(v).Kind() == reflect.Pointer {
-			if val := reflect.ValueOf(v); !val.IsNil() {
-				v = val.Elem().Interface()
-			}
-		}
+		lv, err := utils.ToClickHouseLiteral(v)
 
-		res = append(res, k, v)
+		if err != nil {
+			res = append(res, k, v)
+		} else {
+			res = append(res, k, lv)
+		}
 	}
 
 	return res
