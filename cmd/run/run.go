@@ -95,7 +95,7 @@ func Command() *cli.Command {
 			})
 
 			scope, scopeCloser := tally.NewRootScope(tally.ScopeOptions{
-				Prefix:         "agnostic_etl_engine",
+				Prefix:         "agt",
 				CachedReporter: promReporter,
 				Separator:      promreporter.DefaultSeparator,
 			}, 1*time.Second)
