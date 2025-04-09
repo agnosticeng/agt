@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"log/slog"
 
 	slogctx "github.com/veqryn/slog-context"
 )
@@ -50,14 +49,7 @@ func SequenceProcessor(
 				case <-ctx.Done():
 					return nil
 				case outchan <- t:
-					logger.Log(
-						ctx,
-						slog.LevelDebug,
-						"task sequenced",
-						"id", t.Id(),
-						"sequence_number_start", t.SequenceNumberStart,
-						"sequence_number_end", t.SequenceNumberEnd,
-					)
+					logger.Debug("task sequenced", taskToKeyValues(t)...)
 				}
 
 				nextSequenceNumber = t.SequenceNumberEnd + 1

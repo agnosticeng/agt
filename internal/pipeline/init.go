@@ -39,6 +39,6 @@ func Init(
 		return nil, err
 	}
 
-	logger.Info("init vars", mapToSlice(utils.LastElemOrZero(rows))...)
+	logger.Info("init vars", varsToKeyValues(utils.LastElemOrZero(rows))...)
 	return utils.LastElemOrZero(rows), nil
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/agnosticeng/agt/internal/utils"
 	slogctx "github.com/veqryn/slog-context"
 )
 
@@ -49,20 +48,4 @@ func DebugProcessor(
 			}
 		}
 	}
-}
-
-func mapToSlice(m map[string]any) []any {
-	var res []any
-
-	for k, v := range m {
-		lv, err := utils.ToClickHouseLiteral(v)
-
-		if err != nil {
-			res = append(res, k, v)
-		} else {
-			res = append(res, k, lv)
-		}
-	}
-
-	return res
 }

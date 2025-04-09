@@ -27,10 +27,7 @@ func Finalizer(
 				return nil
 			}
 
-			logger.Info(
-				"task finalized",
-				"id", t.Id(),
-			)
+			logger.Debug("task finalized", taskToKeyValues(t)...)
 		}
 	}
 }
