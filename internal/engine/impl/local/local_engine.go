@@ -63,7 +63,7 @@ func NewLocalEngine(ctx context.Context, conf LocalEngineConfig) (*LocalEngine, 
 			return nil, err
 		}
 
-		conf.BundlesPath = filepath.Join(path, "agnostic-blockchain-etl/bundles")
+		conf.BundlesPath = filepath.Join(path, "agt/bundles")
 	}
 
 	for k, v := range conf.Vars {

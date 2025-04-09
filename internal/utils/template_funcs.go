@@ -29,6 +29,10 @@ func Deref(v any) (any, error) {
 func ToClickHouseLiteral(v any) (string, error) {
 	var rv = reflect.ValueOf(v)
 
+	if !rv.IsValid() || rv.IsZero() {
+		return "null", nil
+	}
+
 	switch rv.Kind() {
 	case reflect.Pointer:
 		return ToClickHouseLiteral(rv.Elem().Interface())
