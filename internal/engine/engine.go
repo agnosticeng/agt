@@ -14,12 +14,13 @@ type Engine interface {
 }
 
 type QueryMetadata struct {
-	Rows       uint64
-	Bytes      uint64
-	TotalRows  uint64
-	WroteRows  uint64
-	WroteBytes uint64
-	Elapsed    time.Duration
+	Rows            uint64
+	Bytes           uint64
+	TotalRows       uint64
+	WroteRows       uint64
+	WroteBytes      uint64
+	Elapsed         time.Duration
+	MemoryPeakUsage uint64
 }
 
 type Log struct {

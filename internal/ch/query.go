@@ -13,6 +13,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 	"github.com/agnosticeng/agt/internal/engine"
 	"github.com/agnosticeng/agt/internal/utils"
+	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	slogctx "github.com/veqryn/slog-context"
 )
@@ -99,12 +100,14 @@ func RunQuery(
 
 	logger.Debug(
 		"summary",
+		"query", query,
 		"rows", md.Rows,
 		"bytes", md.Bytes,
 		"total_rows", md.TotalRows,
 		"wrote_rows", md.WroteRows,
 		"wrote_bytes", md.WroteBytes,
 		"elapsed", md.Elapsed,
+		"memory_peak_usage", humanize.Bytes(md.MemoryPeakUsage),
 	)
 
 	if err != nil && !query.IgnoreFailure {
@@ -121,6 +124,7 @@ func RunQuery(
 		queryMetrics.TotalRows.Inc(int64(md.TotalRows))
 		queryMetrics.WroteRows.Inc(int64(md.WroteRows))
 		queryMetrics.WroteBytes.Inc(int64(md.WroteBytes))
+		queryMetrics.MemoryPeakUsage.Update(float64(md.MemoryPeakUsage))
 	}
 
 	return res, nil

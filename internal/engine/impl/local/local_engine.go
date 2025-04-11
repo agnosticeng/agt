@@ -312,6 +312,7 @@ func (eng *LocalEngine) Query(ctx context.Context, query string, args ...any) ([
 			ctx,
 			clickhouse.WithProgress(ch.ProgressHandler(&md)),
 			clickhouse.WithLogs(ch.LogHandler(eng.logger)),
+			clickhouse.WithProfileEvents(ch.ProfileEventHandler(&md)),
 		),
 		query,
 		args...,

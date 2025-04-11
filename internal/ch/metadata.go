@@ -35,3 +35,13 @@ func LogHandler(logger *slog.Logger) func(*clickhouse.Log) {
 		)
 	}
 }
+
+func ProfileEventHandler(md *engine.QueryMetadata) func([]clickhouse.ProfileEvent) {
+	return func(events []clickhouse.ProfileEvent) {
+		for _, p := range events {
+			if p.Name == "MemoryTrackerPeakUsage" {
+				md.MemoryPeakUsage = max(md.MemoryPeakUsage, uint64(p.Value))
+			}
+		}
+	}
+}

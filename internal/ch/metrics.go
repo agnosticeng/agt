@@ -7,13 +7,14 @@ import (
 )
 
 type QueryMetrics struct {
-	ExecutionTime tally.Histogram
-	Elapsed       tally.Histogram
-	Rows          tally.Counter
-	Bytes         tally.Counter
-	TotalRows     tally.Counter
-	WroteRows     tally.Counter
-	WroteBytes    tally.Counter
+	ExecutionTime   tally.Histogram
+	Elapsed         tally.Histogram
+	Rows            tally.Counter
+	Bytes           tally.Counter
+	TotalRows       tally.Counter
+	WroteRows       tally.Counter
+	WroteBytes      tally.Counter
+	MemoryPeakUsage tally.Gauge
 }
 
 func NewQueryMetrics(scope tally.Scope) *QueryMetrics {
@@ -26,11 +27,12 @@ func NewQueryMetrics(scope tally.Scope) *QueryMetrics {
 			"elapsed",
 			tally.MustMakeExponentialDurationBuckets(100*time.Millisecond, 2, 10),
 		),
-		Rows:       scope.Counter("rows"),
-		Bytes:      scope.Counter("bytes"),
-		TotalRows:  scope.Counter("total_rows"),
-		WroteRows:  scope.Counter("wrote_rows"),
-		WroteBytes: scope.Counter("wrote_bytes"),
+		Rows:            scope.Counter("rows"),
+		Bytes:           scope.Counter("bytes"),
+		TotalRows:       scope.Counter("total_rows"),
+		WroteRows:       scope.Counter("wrote_rows"),
+		WroteBytes:      scope.Counter("wrote_bytes"),
+		MemoryPeakUsage: scope.Gauge("memory_peak_usage"),
 	}
 }
 
