@@ -113,26 +113,8 @@ func NewLocalEngine(ctx context.Context, conf LocalEngineConfig) (*LocalEngine, 
 
 	logger.Info("local clickhouse server network config", "hostname", u.Hostname(), "port", u.Port())
 
-	var (
-		defaultSettings = map[string]interface{}{
-			"path": "./",
-			"user_defined_executable_functions_config": "*_function.*ml",
-			"listen_host":                      u.Hostname(),
-			"tcp_port":                         u.Port(),
-			"shutdown_wait_unfinished_queries": 0,
-			"profiles": map[string]interface{}{
-				"default": map[string]interface{}{},
-			},
-			"users": map[string]interface{}{
-				"default": map[string]interface{}{
-					"password": "",
-				},
-			},
-		}
-		finalSettings = make(map[string]interface{})
-	)
-
-	maps.Copy(finalSettings, defaultSettings)
+	var finalSettings = make(map[string]interface{})
+	maps.Copy(finalSettings, generateDefaultSettings(u))
 	maps.Copy(finalSettings, ch.NormalizeSettings(conf.ServerSettings))
 
 	data, err := yaml.Marshal(finalSettings)
@@ -386,4 +368,26 @@ func findFreePort(host string) (int, error) {
 
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func generateDefaultSettings(dsn *url.URL) clickhouse.Settings {
+	var settings = make(clickhouse.Settings)
+
+	settings["path"] = "./"
+	settings["user_defined_executable_functions_config"] = "*_function.*ml"
+	settings["listen_host"] = dsn.Hostname()
+	settings["tcp_port"] = dsn.Port()
+	settings["profiles"] = map[string]any{
+		"default": map[string]any{},
+	}
+	settings["users"] = map[string]any{
+		"default": map[string]any{
+			"password": "",
+		},
+	}
+	settings["shutdown_wait_unfinished_queries"] = 0
+	settings["cache_size_to_ram_max_ratio"] = 0.1
+	settings["cgroup_memory_watcher_soft_limit_ratio"] = 0.25
+
+	return settings
 }

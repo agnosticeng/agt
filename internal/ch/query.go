@@ -100,7 +100,6 @@ func RunQuery(
 
 	logger.Debug(
 		"summary",
-		"query", query,
 		"rows", md.Rows,
 		"bytes", md.Bytes,
 		"total_rows", md.TotalRows,
