@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 )
 
 func FuncMap() template.FuncMap {
@@ -101,6 +102,14 @@ func ToClickHouseLiteral(v any) (string, error) {
 
 		b.WriteString(")")
 		return b.String(), nil
+
+	case reflect.Struct:
+		switch {
+		case rv.Type() == reflect.TypeOf(time.Time{}):
+			return "toDateTime('" + (rv.Interface().(time.Time)).UTC().Format(time.DateTime) + "', 'UTC')", nil
+		default:
+			return "", fmt.Errorf("unhandled type: %s", rv.Type().String())
+		}
 
 	default:
 		return "", fmt.Errorf("unhandled type: %s", rv.Type().String())

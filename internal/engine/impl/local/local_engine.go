@@ -102,7 +102,7 @@ func NewLocalEngine(ctx context.Context, conf LocalEngineConfig) (*LocalEngine, 
 			return nil, err
 		}
 
-		conf.Dsn = fmt.Sprintf("tcp://127.0.0.1:%d/default", freePort)
+		conf.Dsn = fmt.Sprintf("tcp://127.0.0.1:%d/default?read_timeout=3600s", freePort)
 	}
 
 	u, err := url.Parse(conf.Dsn)
