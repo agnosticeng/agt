@@ -43,7 +43,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            "CLICKHOUSE_VERSION=25.2.1.3085"
+            "CLICKHOUSE_VERSION=25.4.1.2934"
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
