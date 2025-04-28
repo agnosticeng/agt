@@ -17,7 +17,7 @@ func RunStartupProbe(ctx context.Context, engine engine.Engine, conf StartupProb
 	var logger = slogctx.FromCtx(ctx)
 
 	if conf.MaxDelay == 0 {
-		conf.MaxDelay = time.Second * 10
+		conf.MaxDelay = time.Second * 20
 	}
 
 	if conf.PollInterval == 0 {

@@ -389,5 +389,46 @@ func generateDefaultSettings(dsn *url.URL) clickhouse.Settings {
 	settings["cache_size_to_ram_max_ratio"] = 0.1
 	settings["cgroup_memory_watcher_soft_limit_ratio"] = 0.25
 
+	// Low-memory server settings taken from here: https://kb.altinity.com/altinity-kb-setup-and-maintenance/configure_clickhouse_for_low_mem_envs/
+	settings["mysql_port"] = map[string]any{"@remove": "remove"}
+	settings["postgresql_port"] = map[string]any{"@remove": "remove"}
+	settings["query_thread_log"] = map[string]any{"@remove": "remove"}
+	settings["opentelemetry_span_log"] = map[string]any{"@remove": "remove"}
+	settings["processors_profile_log"] = map[string]any{"@remove": "remove"}
+	settings["asynchronous_metric_log"] = map[string]any{"@remove": "remove"}
+	settings["backup_log"] = map[string]any{"@remove": "remove"}
+	settings["metric_log"] = map[string]any{"@remove": "remove"}
+	settings["query_log"] = map[string]any{"@remove": "remove"}
+	settings["query_views_log"] = map[string]any{"@remove": "remove"}
+	settings["part_log"] = map[string]any{"@remove": "remove"}
+	settings["session_log"] = map[string]any{"@remove": "remove"}
+	settings["text_log"] = map[string]any{"@remove": "remove"}
+	settings["trace_log"] = map[string]any{"@remove": "remove"}
+	settings["zookeeper_log"] = map[string]any{"@remove": "remove"}
+	settings["mlock_executable"] = false
+	settings["mark_cache_size"] = 268435456
+	settings["index_mark_cache_size"] = 67108864
+	settings["uncompressed_cache_size"] = 16777216
+	settings["max_thread_pool_size"] = 2000
+	settings["max_server_memory_usage_to_ram_ratio"] = 0.75
+	settings["max_server_memory_usage"] = 0
+	settings["background_pool_size"] = 2
+	settings["background_merges_mutations_concurrency_ratio"] = 2
+	settings["merge_tree"] = map[string]any{
+		"merge_max_block_size":                                                4096,
+		"max_bytes_to_merge_at_max_space_in_pool":                             1073741824,
+		"number_of_free_entries_in_pool_to_lower_max_size_of_merge":           2,
+		"number_of_free_entries_in_pool_to_execute_mutation":                  2,
+		"number_of_free_entries_in_pool_to_execute_optimize_entire_partition": 2,
+	}
+	settings["background_buffer_flush_schedule_pool_size"] = 1
+	settings["background_merges_mutations_scheduling_policy"] = "round_robin"
+	settings["background_move_pool_size"] = 1
+	settings["background_fetches_pool_size"] = 1
+	settings["background_common_pool_size"] = 2
+	settings["background_schedule_pool_size"] = 2
+	settings["background_message_broker_schedule_pool_size"] = 0
+	settings["background_distributed_schedule_pool_size"] = 0
+
 	return settings
 }
