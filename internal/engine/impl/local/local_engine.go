@@ -382,7 +382,9 @@ func generateDefaultSettings(dsn *url.URL) clickhouse.Settings {
 	}
 	settings["users"] = map[string]any{
 		"default": map[string]any{
-			"password": "",
+			"password":                 "",
+			"access_management":        1,
+			"named_collection_control": 1,
 		},
 	}
 	settings["shutdown_wait_unfinished_queries"] = 0
