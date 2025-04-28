@@ -40,7 +40,7 @@ type LocalEngineConfig struct {
 	Dsn            string
 	Settings       map[string]any
 	Vars           map[string]any
-	Logging        *ch.LogHandlerConfig
+	Logging        ch.LogHandlerConfig
 }
 
 type LocalEngine struct {
@@ -294,7 +294,7 @@ func (eng *LocalEngine) Query(ctx context.Context, query string, args ...any) ([
 		clickhouse.Context(
 			ctx,
 			clickhouse.WithProgress(ch.ProgressHandler(&md)),
-			clickhouse.WithLogs(ch.LogHandler(eng.logger, *eng.conf.Logging)),
+			clickhouse.WithLogs(ch.LogHandler(eng.logger, eng.conf.Logging)),
 			clickhouse.WithProfileEvents(ch.ProfileEventHandler(&md)),
 		),
 		query,
