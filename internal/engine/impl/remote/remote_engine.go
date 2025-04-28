@@ -16,6 +16,7 @@ import (
 type RemoteEngineConfig struct {
 	Dsn      string
 	Settings map[string]any
+	Logging  ch.LogHandlerConfig
 }
 
 type RemoteEngine struct {
@@ -72,7 +73,7 @@ func (eng *RemoteEngine) Query(ctx context.Context, query string, args ...any) (
 		clickhouse.Context(
 			ctx,
 			clickhouse.WithProgress(ch.ProgressHandler(&md)),
-			clickhouse.WithLogs(ch.LogHandler(eng.logger)),
+			clickhouse.WithLogs(ch.LogHandler(eng.logger, eng.conf.Logging)),
 		),
 		query,
 		args...,
