@@ -6,7 +6,12 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 	"github.com/agnosticeng/agt/internal/engine"
+	"github.com/samber/lo"
 )
+
+type LogHandlerConfig struct {
+	DiscardSources []string
+}
 
 func ProgressHandler(md *engine.QueryMetadata) func(*proto.Progress) {
 	return func(p *proto.Progress) {
@@ -23,8 +28,12 @@ func ProgressHandler(md *engine.QueryMetadata) func(*proto.Progress) {
 	}
 }
 
-func LogHandler(logger *slog.Logger) func(*clickhouse.Log) {
+func LogHandler(logger *slog.Logger, conf LogHandlerConfig) func(*clickhouse.Log) {
 	return func(l *clickhouse.Log) {
+		if lo.Contains(conf.DiscardSources, l.Source) {
+			return
+		}
+
 		logger.Info(
 			l.Text,
 			"hostname", l.Hostname,
