@@ -18,7 +18,7 @@ import (
 
 func main() {
 	app := cli.App{
-		Name:  "agnostic-blockchain-etl",
+		Name:  "agt",
 		Flags: slogcli.SlogFlags(),
 		Before: cliutils.CombineBeforeFuncs(
 			slogcli.SlogBefore,

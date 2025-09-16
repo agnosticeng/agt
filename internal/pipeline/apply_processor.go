@@ -35,7 +35,7 @@ func ApplyProcessor(
 	var (
 		logger         = slogctx.FromCtx(ctx)
 		metricsScope   = tallyctx.FromContextOrNoop(ctx)
-		procMetrics    = ch.NewProcessorMetrics(metricsScope)
+		procMetrics    = NewProcessorMetrics(metricsScope)
 		queriesMetrics = lo.Map(conf.Queries, func(query ch.QueryRef, i int) *ch.QueryMetrics { return query.Metrics(metricsScope) })
 	)
 
@@ -55,7 +55,7 @@ func ApplyProcessor(
 				return nil
 			}
 
-			rows, err := ch.RunQueries(
+			rows, err := RunQueries(
 				ctx,
 				engine,
 				tmpl,

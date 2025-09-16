@@ -33,7 +33,7 @@ func Init(
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(ch.NormalizeSettings(conf.ClickhouseSettings)))
 	}
 
-	rows, err := ch.RunQueries(ctx, engine, tmpl, conf.Queries, vars, nil, nil)
+	rows, err := RunQueries(ctx, engine, tmpl, conf.Queries, vars, nil, nil)
 
 	if err != nil {
 		return nil, err

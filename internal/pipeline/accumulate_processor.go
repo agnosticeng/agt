@@ -45,7 +45,7 @@ func AccumulateProcessor(
 	var (
 		logger          = slogctx.FromCtx(ctx)
 		metricsScope    = tallyctx.FromContextOrNoop(ctx)
-		procMetrics     = ch.NewProcessorMetrics(metricsScope)
+		procMetrics     = NewProcessorMetrics(metricsScope)
 		queriesMetrics  = lo.Map(conf.Queries, func(query ch.QueryRef, i int) *ch.QueryMetrics { return query.Metrics(metricsScope) })
 		setupMetrics    = conf.Setup.Metrics(metricsScope)
 		sizeMetrics     = conf.Size.Metrics(metricsScope)
@@ -82,7 +82,7 @@ func AccumulateProcessor(
 				currentBatch = newBatch(conf.MaxSize, conf.MaxWait)
 
 				if conf.Setup != nil {
-					if _, err := ch.RunQuery(
+					if _, err := RunQuery(
 						ctx,
 						engine,
 						tmpl,
@@ -96,7 +96,7 @@ func AccumulateProcessor(
 				}
 			}
 
-			rows, err := ch.RunQueries(
+			rows, err := RunQueries(
 				ctx,
 				engine,
 				tmpl,
@@ -123,7 +123,7 @@ func AccumulateProcessor(
 			if conf.Size == nil {
 				currentBatch.incrementSize(1)
 			} else {
-				rows, err := ch.RunQuery(
+				rows, err := RunQuery(
 					ctx,
 					engine,
 					tmpl,
@@ -161,7 +161,7 @@ func AccumulateProcessor(
 			var t0 = time.Now()
 
 			if conf.Teardown != nil {
-				if _, err := ch.RunQuery(
+				if _, err := RunQuery(
 					ctx,
 					engine,
 					tmpl,

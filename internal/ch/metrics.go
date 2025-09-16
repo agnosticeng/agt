@@ -35,18 +35,3 @@ func NewQueryMetrics(scope tally.Scope) *QueryMetrics {
 		MemoryPeakUsage: scope.Gauge("memory_peak_usage"),
 	}
 }
-
-type ProcessorMetrics struct {
-	Active           tally.Gauge
-	OutChanQueueTime tally.Histogram
-}
-
-func NewProcessorMetrics(scope tally.Scope) *ProcessorMetrics {
-	return &ProcessorMetrics{
-		Active: scope.Gauge("active"),
-		OutChanQueueTime: scope.Histogram(
-			"out_chan_queue_time",
-			tally.MustMakeExponentialDurationBuckets(time.Millisecond*5, 2, 20),
-		),
-	}
-}
