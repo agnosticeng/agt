@@ -4,18 +4,19 @@ import (
 	"context"
 	"time"
 
+	"github.com/agnosticeng/concu/mapstream"
 	slogctx "github.com/veqryn/slog-context"
 )
 
-type SleepProcessorConfig struct {
+type SleepStageConfig struct {
 	Duration time.Duration
 }
 
-func SleepProcessor(
+func SleepStage(
 	ctx context.Context,
-	inchan <-chan *Task,
-	outchan chan<- *Task,
-	conf SleepProcessorConfig,
+	inchan <-chan Vars,
+	outchan chan<- Vars,
+	conf SleepStageConfig,
 ) error {
 	var logger = slogctx.FromCtx(ctx)
 
@@ -26,25 +27,17 @@ func SleepProcessor(
 		conf.Duration = time.Second
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case t, open := <-inchan:
-			if !open {
-				return nil
-			}
-
+	return mapstream.Mapper(
+		ctx,
+		inchan,
+		outchan,
+		func(ctx context.Context, vars Vars) (Vars, error) {
 			select {
 			case <-ctx.Done():
 			case <-time.After(conf.Duration):
 			}
 
-			select {
-			case <-ctx.Done():
-				return nil
-			case outchan <- t:
-			}
-		}
-	}
+			return vars, nil
+		},
+	)
 }

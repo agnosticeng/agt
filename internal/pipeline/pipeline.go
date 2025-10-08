@@ -8,7 +8,6 @@ import (
 
 	"github.com/agnosticeng/agt/internal/engine"
 	"github.com/agnosticeng/agt/internal/utils"
-	"github.com/agnosticeng/concu/worker"
 	"github.com/agnosticeng/tallyctx"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
@@ -17,15 +16,15 @@ import (
 )
 
 type PipelineConfig struct {
-	Init       InitConfig
-	Source     SourceConfig
-	Processors []ProcessorConfig
-	Finalizer  FinalizerConfig
+	Init      InitConfig
+	Source    SourceConfig
+	Stages    []StageConfig
+	Finalizer FinalizerConfig
 }
 
 func (conf PipelineConfig) WithDefaults() PipelineConfig {
 	conf.Init = conf.Init.WithDefaults()
-	conf.Processors = lo.Map(conf.Processors, func(conf ProcessorConfig, _ int) ProcessorConfig { return conf.WithDefaults() })
+	conf.Stages = lo.Map(conf.Stages, func(conf StageConfig, _ int) StageConfig { return conf.WithDefaults() })
 	return conf
 }
 
@@ -39,8 +38,8 @@ func Run(
 	var logger = slogctx.FromCtx(ctx)
 	defer logger.Info("pipeline finished running")
 
-	if len(conf.Processors) == 0 {
-		return fmt.Errorf("pipeline must have at leats 1 processor")
+	if len(conf.Stages) == 0 {
+		return fmt.Errorf("pipeline must have at leats 1 stage")
 	}
 
 	runUUID, err := uuid.NewV7()
@@ -63,7 +62,7 @@ func Run(
 
 	var (
 		group, groupctx = errgroup.WithContext(ctx)
-		sourceOutChan   = make(chan *Task, 3)
+		sourceOutChan   = make(chan Vars, 3)
 		lastOutChan     = sourceOutChan
 	)
 
@@ -82,48 +81,24 @@ func Run(
 		)
 	})
 
-	for i, procConfig := range conf.Processors {
+	for i, procConfig := range conf.Stages {
 		var (
 			inchan  = lastOutChan
-			outchan = make(chan *Task, procConfig.ChanSize)
+			outchan = make(chan Vars, procConfig.ChanSize)
 		)
 
 		group.Go(func() error {
 			defer close(outchan)
-
-			return worker.RunN(
-				groupctx,
-				procConfig.Workers,
-				func(ctx context.Context, j int) func() error {
-					return func() error {
-						var stepCtx = slogctx.With(
-							ctx,
-							"processor", i,
-							"worker", j,
-						)
-
-						stepCtx = tallyctx.NewContext(
-							stepCtx,
-							tallyctx.FromContextOrNoop(stepCtx).
-								SubScope("processor").
-								Tagged(map[string]string{
-									"processor": strconv.FormatInt(int64(i), 10),
-									"worker":    strconv.FormatInt(int64(j), 10),
-								}),
-						)
-
-						return Processor(
-							stepCtx,
-							engine,
-							tmpl,
-							vars,
-							inchan,
-							outchan,
-							procConfig,
-						)
-					}
-				},
+			var procCtx = slogctx.With(groupctx, "processor", i)
+			procCtx = tallyctx.NewContext(
+				procCtx, tallyctx.FromContextOrNoop(procCtx).
+					SubScope("processor").
+					Tagged(map[string]string{
+						"processor": strconv.FormatInt(int64(i), 10),
+					}),
 			)
+
+			return Stage(procCtx, engine, tmpl, vars, inchan, outchan, procConfig)
 		})
 
 		lastOutChan = outchan

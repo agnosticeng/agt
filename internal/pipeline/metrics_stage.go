@@ -10,6 +10,7 @@ import (
 	"github.com/agnosticeng/agt/internal/ch"
 	"github.com/agnosticeng/agt/internal/engine"
 	"github.com/agnosticeng/agt/internal/utils"
+	"github.com/agnosticeng/concu/mapstream"
 	"github.com/agnosticeng/tallyctx"
 	"github.com/uber-go/tally/v4"
 )
@@ -21,33 +22,33 @@ var (
 	MetricGauge   MetricType = "GAUGE"
 )
 
-type TaskMetricConfig struct {
+type MetricConfig struct {
 	Name string
 	Type MetricType
 }
 
-type TaskMetricsProcessorConfig struct {
-	Metrics            []TaskMetricConfig
+type MetricsStageConfig struct {
+	Metrics            []MetricConfig
 	Query              ch.QueryRef
 	ClickhouseSettings map[string]any
 }
 
-func (conf TaskMetricsProcessorConfig) WithDefaults() TaskMetricsProcessorConfig {
+func (conf MetricsStageConfig) WithDefaults() MetricsStageConfig {
 	return conf
 }
 
-func TaskMetricsProcessor(
+func MetricsStage(
 	ctx context.Context,
 	engine engine.Engine,
 	tmpl *template.Template,
 	commonVars map[string]any,
-	inchan <-chan *Task,
-	outchan chan<- *Task,
-	conf TaskMetricsProcessorConfig,
+	inchan <-chan Vars,
+	outchan chan<- Vars,
+	conf MetricsStageConfig,
 ) error {
 	var (
 		metricsScope = tallyctx.FromContextOrNoop(ctx)
-		procMetrics  = NewProcessorMetrics(metricsScope)
+		procMetrics  = NewStageMetrics(metricsScope)
 		queryMetrics = conf.Query.Metrics(metricsScope)
 		taskMetrics  = make(map[string]any)
 	)
@@ -67,63 +68,51 @@ func TaskMetricsProcessor(
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(ch.NormalizeSettings(conf.ClickhouseSettings)))
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case t, open := <-inchan:
-			if !open {
-				return nil
-			}
-
+	return mapstream.Mapper(
+		ctx,
+		inchan,
+		outchan,
+		func(ctx context.Context, vars Vars) (Vars, error) {
 			rows, err := RunQuery(
 				ctx,
 				engine,
 				tmpl,
 				conf.Query,
-				utils.MergeMaps(
-					map[string]any{"TASK_ID": t.Id()},
-					t.Vars,
-					commonVars,
-				),
+				utils.MergeMaps(vars, commonVars),
 				procMetrics,
 				queryMetrics,
 			)
 
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			if len(rows) != 1 {
-				return fmt.Errorf("task metric query must return exactly 1 row: %d returned", len(rows))
+				return nil, fmt.Errorf("task metric query must return exactly 1 row: %d returned", len(rows))
 			}
 
 			for k, v := range taskMetrics {
 				switch v := v.(type) {
 				case tally.Counter:
 					if i, err := tryGetFromRow[int64](rows[0], k); err != nil {
-						return err
+						return nil, err
 					} else {
 						v.Inc(i)
 					}
 				case tally.Gauge:
 					if f, err := tryGetFromRow[float64](rows[0], k); err != nil {
-						return err
+						return nil, err
 					} else {
 						v.Update(f)
 					}
 				default:
-					return fmt.Errorf("unknown metric type: %v", reflect.TypeOf(v))
+					return nil, fmt.Errorf("unknown metric type: %v", reflect.TypeOf(v))
 				}
 			}
 
-			select {
-			case <-ctx.Done():
-				return nil
-			case outchan <- t:
-			}
-		}
-	}
+			return vars, nil
+		},
+	)
 }
 
 func tryGetFromRow[T any](row map[string]any, column string) (T, error) {

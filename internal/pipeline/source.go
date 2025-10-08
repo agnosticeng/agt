@@ -25,15 +25,14 @@ func Source(
 	engine engine.Engine,
 	tmpl *template.Template,
 	commonVars map[string]interface{},
-	outchan chan<- *Task,
+	outchan chan<- Vars,
 	conf SourceConfig,
 ) error {
 	var (
-		logger             = slogctx.FromCtx(ctx)
-		nextWaitDuration   time.Duration
-		nextSequenceNumber int64
-		lastRow            map[string]any
-		iterations         int
+		logger           = slogctx.FromCtx(ctx)
+		nextWaitDuration time.Duration
+		lastRow          map[string]any
+		iterations       int
 	)
 
 	logger.Debug("started")
@@ -72,19 +71,11 @@ func Source(
 			}
 
 			for _, row := range rows {
-				var t = Task{
-					SequenceNumberStart: nextSequenceNumber,
-					SequenceNumberEnd:   nextSequenceNumber,
-					Vars:                row,
-				}
-
 				select {
 				case <-ctx.Done():
 					return nil
-				case outchan <- &t:
+				case outchan <- row:
 				}
-
-				nextSequenceNumber++
 			}
 
 			iterations++

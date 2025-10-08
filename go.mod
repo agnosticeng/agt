@@ -1,6 +1,8 @@
 module github.com/agnosticeng/agt
 
-go 1.23.2
+go 1.24.0
+
+toolchain go1.24.4
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.29.0
@@ -21,7 +23,7 @@ require (
 	github.com/uber-go/tally/v4 v4.1.16
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/veqryn/slog-context v0.8.0
-	golang.org/x/sync v0.12.0
+	golang.org/x/sync v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -105,3 +107,5 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+replace github.com/agnosticeng/concu => ../concu

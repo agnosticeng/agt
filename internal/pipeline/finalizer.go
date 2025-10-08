@@ -10,7 +10,7 @@ type FinalizerConfig struct{}
 
 func Finalizer(
 	ctx context.Context,
-	inchan <-chan *Task,
+	inchan <-chan Vars,
 	conf FinalizerConfig,
 ) error {
 	var logger = slogctx.FromCtx(ctx)
@@ -22,12 +22,12 @@ func Finalizer(
 		select {
 		case <-ctx.Done():
 			return nil
-		case t, open := <-inchan:
+		case vars, open := <-inchan:
 			if !open {
 				return nil
 			}
 
-			logger.Info("task finalized", taskToKeyValues(t)...)
+			logger.Info("task finalized", varsToKeyValues(vars)...)
 		}
 	}
 }

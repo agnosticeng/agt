@@ -43,7 +43,9 @@ func RowsToMaps(rows driver.Rows) ([]map[string]interface{}, error) {
 		}
 
 		for i, col := range rowData {
-			item[columnNames[i]] = col
+			if !strings.HasPrefix(columnNames[i], "_") {
+				item[columnNames[i]] = col
+			}
 		}
 
 		res = append(res, item)

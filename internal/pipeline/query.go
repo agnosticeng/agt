@@ -23,7 +23,7 @@ func RunQuery(
 	tmpl *template.Template,
 	query ch.QueryRef,
 	vars map[string]any,
-	procMetrics *ProcessorMetrics,
+	procMetrics *StageMetrics,
 	queryMetrics *ch.QueryMetrics,
 ) ([]map[string]any, error) {
 	var (
@@ -85,7 +85,7 @@ func RunQueries(
 	tmpl *template.Template,
 	queries []ch.QueryRef,
 	vars map[string]any,
-	procMetrics *ProcessorMetrics,
+	procMetrics *StageMetrics,
 	queriesMetrics []*ch.QueryMetrics,
 ) ([]map[string]any, error) {
 	var resVars []map[string]any
