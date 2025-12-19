@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -19,13 +20,13 @@ import (
 
 func RunQuery(
 	ctx context.Context,
-	engine engine.Engine,
+	eng engine.Engine,
 	tmpl *template.Template,
 	query ch.QueryRef,
 	vars map[string]any,
 	procMetrics *StageMetrics,
 	queryMetrics *ch.QueryMetrics,
-) ([]map[string]any, error) {
+) ([]map[string]any, *engine.QueryMetadata, error) {
 	var (
 		t0     = time.Now()
 		logger = slogctx.FromCtx(ctx).With("query", query.Name)
@@ -34,7 +35,7 @@ func RunQuery(
 	q, err := utils.RenderTemplate(tmpl, query.Name, vars)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to render %s template: %w", query.Name, err)
+		return nil, nil, fmt.Errorf("failed to render %s template: %w", query.Name, err)
 	}
 
 	if logger.Enabled(ctx, slog.Level(-10)) {
@@ -46,7 +47,7 @@ func RunQuery(
 		defer procMetrics.Active.Update(0)
 	}
 
-	res, md, err := engine.Query(ctx, q)
+	res, md, err := eng.Query(ctx, q)
 
 	logger.Debug(
 		"summary",
@@ -61,7 +62,8 @@ func RunQuery(
 
 	if err != nil && !query.IgnoreFailure {
 		if ex, ok := lo.ErrorsAs[*proto.Exception](err); !ok || !lo.Contains(query.IgnoreErrorCodes, int(ex.Code)) {
-			return nil, fmt.Errorf("failed to execute query %s: %w", query.Name, err)
+			js, _ := json.Marshal(redactSensitiveVars(vars))
+			return nil, nil, fmt.Errorf("failed to execute query %s(vars=%v): %w", query.Name, string(js), err)
 		}
 	}
 
@@ -76,19 +78,22 @@ func RunQuery(
 		queryMetrics.MemoryPeakUsage.Update(float64(md.MemoryPeakUsage))
 	}
 
-	return res, nil
+	return res, md, nil
 }
 
 func RunQueries(
 	ctx context.Context,
-	engine engine.Engine,
+	eng engine.Engine,
 	tmpl *template.Template,
 	queries []ch.QueryRef,
 	vars map[string]any,
 	procMetrics *StageMetrics,
 	queriesMetrics []*ch.QueryMetrics,
-) ([]map[string]any, error) {
-	var resVars []map[string]any
+) ([]map[string]any, *engine.QueryMetadata, error) {
+	var (
+		resVars []map[string]any
+		resMd   engine.QueryMetadata
+	)
 
 	for i, query := range queries {
 		var queryMetrics *ch.QueryMetrics
@@ -97,9 +102,9 @@ func RunQueries(
 			queryMetrics = queriesMetrics[i]
 		}
 
-		rows, err := RunQuery(
+		rows, md, err := RunQuery(
 			ctx,
-			engine,
+			eng,
 			tmpl,
 			query,
 			vars,
@@ -108,13 +113,15 @@ func RunQueries(
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		if len(rows) > 0 {
+		if len(rows) > 0 && !query.IgnoreOutput {
 			resVars = rows
 		}
+
+		resMd.Merge(md)
 	}
 
-	return resVars, nil
+	return resVars, &resMd, nil
 }

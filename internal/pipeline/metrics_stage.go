@@ -73,7 +73,7 @@ func MetricsStage(
 		inchan,
 		outchan,
 		func(ctx context.Context, vars Vars) (Vars, error) {
-			rows, err := RunQuery(
+			rows, _, err := RunQuery(
 				ctx,
 				engine,
 				tmpl,

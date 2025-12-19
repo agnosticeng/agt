@@ -48,7 +48,9 @@ func RowsToMaps(rows driver.Rows) ([]map[string]interface{}, error) {
 			}
 		}
 
-		res = append(res, item)
+		if len(item) > 0 {
+			res = append(res, item)
+		}
 	}
 
 	if err := rows.Err(); err != nil {

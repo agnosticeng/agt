@@ -17,7 +17,6 @@ import (
 	"github.com/agnosticeng/cnf"
 	"github.com/agnosticeng/cnf/providers/env"
 	"github.com/agnosticeng/objstr"
-	objstrutils "github.com/agnosticeng/objstr/utils"
 	"github.com/agnosticeng/panicsafe"
 	"github.com/agnosticeng/tallyctx"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -60,7 +59,7 @@ func Command() *cli.Command {
 			}
 
 			conf, err := cnf.LoadStruct[config](
-				cnf.WithProvider(objstrutils.NewCnfProvider(objstr.FromContextOrDefault(sigCtx), path)),
+				cnf.WithProvider(utils.NewCnfProvider(objstr.FromContextOrDefault(sigCtx), path, vars)),
 				cnf.WithProvider(env.NewEnvProvider("AGT")),
 				cnf.WithMapstructureHooks(ch.StringToQueryRefHookFunc()),
 			)

@@ -48,7 +48,7 @@ func Stage(
 	case conf.Metrics != nil:
 		return MetricsStage(ctx, engine, tmpl, commonVars, inchan, outchan, *conf.Metrics)
 	default:
-		return fmt.Errorf("unknwon processor type")
+		return fmt.Errorf("unknwon stage type")
 	}
 }
 

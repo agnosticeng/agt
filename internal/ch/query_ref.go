@@ -15,6 +15,7 @@ type QueryRef struct {
 	Name             string
 	IgnoreFailure    bool
 	IgnoreErrorCodes []int
+	IgnoreOutput     bool
 }
 
 func (ref *QueryRef) Metrics(scope tally.Scope) *QueryMetrics {
@@ -52,6 +53,12 @@ func ParseQueryRef(s string) (*QueryRef, error) {
 			if c, err := strconv.ParseInt(code, 10, 64); err == nil {
 				res.IgnoreErrorCodes = append(res.IgnoreErrorCodes, int(c))
 			}
+		}
+	}
+
+	if v := q.Get("ignore-output"); len(v) > 0 {
+		if b, err := strconv.ParseBool(v); err == nil {
+			res.IgnoreOutput = b
 		}
 	}
 

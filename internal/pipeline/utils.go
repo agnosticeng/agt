@@ -1,6 +1,10 @@
 package pipeline
 
-import "github.com/agnosticeng/agt/internal/utils"
+import (
+	"strings"
+
+	"github.com/agnosticeng/agt/internal/utils"
+)
 
 func varsToKeyValues(m map[string]any) []any {
 	var res []any
@@ -16,4 +20,37 @@ func varsToKeyValues(m map[string]any) []any {
 	}
 
 	return res
+}
+
+var (
+	sensitiveKeywords = []string{
+		"url",
+		"pass",
+		"secret",
+		"key",
+	}
+)
+
+func redactSensitiveVars(m map[string]any) map[string]any {
+	var res = make(map[string]any)
+
+	for k, v := range m {
+		if containsAny(strings.ToLower(k), sensitiveKeywords) {
+			res[k] = "****"
+		} else {
+			res[k] = v
+		}
+	}
+
+	return res
+}
+
+func containsAny(s string, keywords []string) bool {
+	for _, kw := range keywords {
+		if strings.Contains(s, kw) {
+			return true
+		}
+	}
+
+	return false
 }

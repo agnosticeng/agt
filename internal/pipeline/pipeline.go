@@ -89,12 +89,12 @@ func Run(
 
 		group.Go(func() error {
 			defer close(outchan)
-			var procCtx = slogctx.With(groupctx, "processor", i)
+			var procCtx = slogctx.With(groupctx, "stage", i)
 			procCtx = tallyctx.NewContext(
 				procCtx, tallyctx.FromContextOrNoop(procCtx).
-					SubScope("processor").
+					SubScope("stage").
 					Tagged(map[string]string{
-						"processor": strconv.FormatInt(int64(i), 10),
+						"stage": strconv.FormatInt(int64(i), 10),
 					}),
 			)
 

@@ -47,7 +47,7 @@ func Source(
 		case <-ctx.Done():
 			return nil
 		case <-time.After(nextWaitDuration):
-			rows, err := RunQuery(
+			rows, _, err := RunQuery(
 				ctx,
 				engine,
 				tmpl,

@@ -23,6 +23,16 @@ type QueryMetadata struct {
 	MemoryPeakUsage uint64
 }
 
+func (md *QueryMetadata) Merge(other *QueryMetadata) {
+	md.Rows += other.Rows
+	md.Bytes += other.Bytes
+	md.TotalRows += other.TotalRows
+	md.WroteRows += other.WroteRows
+	md.WroteBytes += other.WroteBytes
+	md.Elapsed += other.Elapsed
+	md.MemoryPeakUsage = max(md.MemoryPeakUsage, other.MemoryPeakUsage)
+}
+
 type Log struct {
 	Time     time.Time
 	Hostname string

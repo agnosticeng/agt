@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"math"
 	"text/template"
 	"time"
 
@@ -21,6 +22,7 @@ type BufferStageConfig struct {
 	Condition          *ch.QueryRef
 	Queries            []ch.QueryRef
 	MaxDuration        time.Duration
+	MaxRows            int
 	ClickhouseSettings map[string]any
 }
 
@@ -41,8 +43,12 @@ func BufferStage(
 		return fmt.Errorf("loop must have at least 1 query")
 	}
 
-	if conf.MaxDuration == 0 && conf.Condition == nil {
-		return fmt.Errorf("either MaxDuration or Condition must be set for the loop to finish")
+	if (conf.MaxDuration == 0) && (conf.MaxRows == 0) && conf.Condition == nil {
+		return fmt.Errorf("either MaxDuration, MawRows or Condition must be set for the buffer loop to finish")
+	}
+
+	if conf.MaxRows <= 0 {
+		conf.MaxRows = math.MaxInt
 	}
 
 	var (
@@ -72,7 +78,7 @@ func BufferStage(
 		case <-ctx.Done():
 			return nil
 
-		case <-currentBatch.getMaxWaitTimerChan():
+		case <-currentBatch.C():
 
 		case vars, open := <-inchan:
 			if !open {
@@ -84,7 +90,7 @@ func BufferStage(
 				currentBatch = newBatch(conf.MaxDuration)
 
 				if conf.Enter != nil {
-					if _, err := RunQuery(
+					if _, _, err := RunQuery(
 						ctx,
 						engine,
 						tmpl,
@@ -98,14 +104,14 @@ func BufferStage(
 				}
 			}
 
-			rows, err := RunQueries(
+			rows, md, err := RunQueries(
 				ctx,
 				engine,
 				tmpl,
 				conf.Queries,
 				utils.MergeMaps(
 					map[string]any{
-						"LEFT":  currentBatch.getVars(),
+						"LEFT":  currentBatch.vars,
 						"RIGHT": vars,
 					},
 					commonVars,
@@ -119,15 +125,16 @@ func BufferStage(
 				return err
 			}
 
-			currentBatch.setVars(utils.LastElemOrDefault(rows, currentBatch.getVars()))
+			currentBatch.rows += int(md.WroteRows)
+			currentBatch.vars = utils.LastElemOrDefault(rows, currentBatch.vars)
 
 			if conf.Condition != nil {
-				rows, err := RunQuery(
+				rows, _, err := RunQuery(
 					ctx,
 					engine,
 					tmpl,
 					*conf.Condition,
-					utils.MergeMaps(currentBatch.getVars(), commonVars),
+					utils.MergeMaps(commonVars, currentBatch.vars),
 					procMetrics,
 					conditionMetrics,
 				)
@@ -151,16 +158,20 @@ func BufferStage(
 					continue
 				}
 			}
+
+			if currentBatch.rows < conf.MaxRows {
+				continue
+			}
 		}
 
 		if currentBatch != nil {
 			if conf.Leave != nil {
-				if _, err := RunQuery(
+				if _, _, err := RunQuery(
 					ctx,
 					engine,
 					tmpl,
 					*conf.Leave,
-					utils.MergeMaps(currentBatch.getVars(), commonVars),
+					utils.MergeMaps(commonVars, currentBatch.vars),
 					procMetrics,
 					leaveMetrics,
 				); err != nil {
@@ -184,32 +195,25 @@ func BufferStage(
 }
 
 type batch struct {
-	maxWaitTimer *time.Timer
-	vars         Vars
+	vars  Vars
+	timer *time.Timer
+	rows  int
 }
 
 func newBatch(maxWait time.Duration) *batch {
 	var b batch
 
 	if maxWait > 0 {
-		b.maxWaitTimer = time.NewTimer(maxWait)
+		b.timer = time.NewTimer(maxWait)
 	}
 
 	return &b
 }
 
-func (b *batch) getMaxWaitTimerChan() <-chan time.Time {
-	if b == nil || b.maxWaitTimer == nil {
+func (b *batch) C() <-chan time.Time {
+	if b == nil || b.timer == nil {
 		return nil
 	}
 
-	return b.maxWaitTimer.C
-}
-
-func (b *batch) getVars() map[string]any {
-	return b.vars
-}
-
-func (b *batch) setVars(vars map[string]any) {
-	b.vars = vars
+	return b.timer.C
 }

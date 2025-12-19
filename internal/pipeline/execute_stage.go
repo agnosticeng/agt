@@ -47,26 +47,30 @@ func ExecuteStage(
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(ch.NormalizeSettings(conf.ClickhouseSettings)))
 	}
 
-	return mapstream.MapStream(
+	return mapstream.MapStreamIndex(
 		ctx,
 		inchan,
 		outchan,
-		func(ctx context.Context, vars Vars) (Vars, error) {
-			rows, err := RunQueries(
-				ctx,
-				engine,
-				tmpl,
-				conf.Queries,
-				utils.MergeMaps(vars, commonVars),
-				procMetrics,
-				queriesMetrics,
-			)
+		func(ctx context.Context, i int) func(context.Context, Vars) (Vars, error) {
+			return func(ctx context.Context, vars Vars) (Vars, error) {
+				ctx = slogctx.With(ctx, "worker", i)
 
-			if err != nil {
-				return nil, err
+				rows, _, err := RunQueries(
+					ctx,
+					engine,
+					tmpl,
+					conf.Queries,
+					utils.MergeMaps(commonVars, vars),
+					procMetrics,
+					queriesMetrics,
+				)
+
+				if err != nil {
+					return nil, err
+				}
+
+				return utils.LastElemOrDefault(rows, vars), nil
 			}
-
-			return utils.LastElemOrDefault(rows, vars), nil
 		},
 		conf.MapStreamConfig,
 	)
