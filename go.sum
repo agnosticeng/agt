@@ -40,8 +40,8 @@ github.com/agnosticeng/cliutils v0.1.0 h1:yNGjA9gIvkdfmTCuyOHMvxNHFIgIzM15mZ3Ear
 github.com/agnosticeng/cliutils v0.1.0/go.mod h1:2+k2s70aKTigumofzfjryA4HIvnL7BffYlFvnqTPfEU=
 github.com/agnosticeng/cnf v0.2.0 h1:zJeBbIoV/LSNGQORRa9Z+N/MrxU+Ip2B34GuNNWTILY=
 github.com/agnosticeng/cnf v0.2.0/go.mod h1:p5HFG+oNLDoKPnhiTW3/hObhZ+GKFAjVAVs0O4Oks5M=
-github.com/agnosticeng/concu v0.3.0 h1:mkRMDx7iZOLX9vEs5sCW77Glaz8EwIqrYqyY5+Nb57Q=
-github.com/agnosticeng/concu v0.3.0/go.mod h1:PTaEQFW0n3agQcpeVboRsVaJoBLzswiNm987lLNUDmA=
+github.com/agnosticeng/concu v0.4.0 h1:E9vZuBgflJSAY7k5DBrwh6Vv+vw3Oyg6KByxWjMN59s=
+github.com/agnosticeng/concu v0.4.0/go.mod h1:PTaEQFW0n3agQcpeVboRsVaJoBLzswiNm987lLNUDmA=
 github.com/agnosticeng/dynamap v0.1.2 h1:9+QnNAgE3vm0bUqqwsV1r33iGCh/9eN8hR442HkLS8s=
 github.com/agnosticeng/dynamap v0.1.2/go.mod h1:DBq9RNSJWih2O0WAcbUt5lPRoiEsSxO/lBdjFNHCV+0=
 github.com/agnosticeng/mapstructure-hooks v0.3.0 h1:/zlwNYeGvTb9wQKVStwkRQqdbk125++qASi51i+63mA=

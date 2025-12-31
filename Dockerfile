@@ -1,4 +1,4 @@
-FROM golang:1.23-bullseye AS build
+FROM golang:1.24-bullseye AS build
 ARG TARGETARCH
 ARG CLICKHOUSE_BINARY_URL="https://builds.clickhouse.com/master/${TARGETARCH}/clickhouse"
 
