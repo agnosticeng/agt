@@ -17,6 +17,23 @@ func ParseKeyValues(kvs []string, separator string) map[string]interface{} {
 	return m
 }
 
+func ParseKeyValuesWithPrefix(input []string, separator string, prefix string) map[string]interface{} {
+	var (
+		res = make(map[string]interface{})
+		kvs = ParseKeyValues(input, separator)
+	)
+
+	for k, v := range kvs {
+		if !strings.HasPrefix(k, prefix) {
+			continue
+		}
+
+		res[strings.TrimPrefix(k, prefix)] = v
+	}
+
+	return res
+}
+
 func SHA256Sum(s string) string {
 	var h = sha256.New()
 	h.Write([]byte(s))

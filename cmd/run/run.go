@@ -45,10 +45,13 @@ func Command() *cli.Command {
 		Flags: Flags,
 		Action: func(ctx *cli.Context) error {
 			var (
-				logger               = slogctx.FromCtx(ctx.Context)
-				path                 = ctx.Args().Get(0)
-				templatePath         = ctx.String("template-path")
-				vars                 = utils.ParseKeyValues(ctx.StringSlice("var"), "=")
+				logger       = slogctx.FromCtx(ctx.Context)
+				path         = ctx.Args().Get(0)
+				templatePath = ctx.String("template-path")
+				vars         = utils.MergeMaps(
+					utils.ParseKeyValuesWithPrefix(os.Environ(), "=", "AGT__VAR__"),
+					utils.ParseKeyValues(ctx.StringSlice("var"), "="),
+				)
 				sigCtx, sigCtxCancel = signal.NotifyContext(ctx.Context, os.Interrupt, syscall.SIGTERM)
 			)
 
