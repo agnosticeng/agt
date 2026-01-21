@@ -1,4 +1,4 @@
-FROM golang:1.24-bullseye AS build
+FROM golang:1.24-trixie AS build
 ARG TARGETARCH
 ARG CLICKHOUSE_BINARY_URL="https://builds.clickhouse.com/master/${TARGETARCH}/clickhouse"
 
@@ -12,7 +12,7 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download -x
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make
 
 
-FROM debian:bullseye
+FROM debian:trixie
 LABEL org.opencontainers.image.source=https://github.com/agnosticeng/agt
 ARG CLICKHOUSE_VERSION
 

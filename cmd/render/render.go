@@ -2,7 +2,6 @@ package render
 
 import (
 	"fmt"
-	"net/url"
 	"path/filepath"
 
 	"github.com/agnosticeng/agt/internal/utils"
@@ -25,13 +24,7 @@ func Command() *cli.Command {
 				filter = ctx.String("filter")
 			)
 
-			u, err := url.Parse(path)
-
-			if err != nil {
-				return err
-			}
-
-			tmpl, err := utils.LoadTemplates(ctx.Context, u)
+			tmpl, err := utils.LoadTemplates(ctx.Context, path, nil)
 
 			if err != nil {
 				return err

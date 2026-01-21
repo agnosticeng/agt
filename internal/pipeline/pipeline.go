@@ -16,10 +16,11 @@ import (
 )
 
 type PipelineConfig struct {
-	Init      InitConfig
-	Source    SourceConfig
-	Stages    []StageConfig
-	Finalizer FinalizerConfig
+	DefaultVars map[string]any
+	Init        InitConfig
+	Source      SourceConfig
+	Stages      []StageConfig
+	Finalizer   FinalizerConfig
 }
 
 func (conf PipelineConfig) WithDefaults() PipelineConfig {
@@ -32,7 +33,7 @@ func Run(
 	ctx context.Context,
 	engine engine.Engine,
 	tmpl *template.Template,
-	vars map[string]interface{},
+	vars map[string]any,
 	conf PipelineConfig,
 ) error {
 	var logger = slogctx.FromCtx(ctx)
@@ -49,6 +50,7 @@ func Run(
 	}
 
 	vars["UUID"] = runUUID.String()
+	vars = utils.MergeMaps(conf.DefaultVars, vars)
 
 	initVars, err := Init(ctx, engine, tmpl, vars, conf.Init)
 

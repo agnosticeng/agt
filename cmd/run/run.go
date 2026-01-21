@@ -3,10 +3,8 @@ package run
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -35,6 +33,7 @@ var Flags = []cli.Flag{
 type config struct {
 	pipeline.PipelineConfig
 	Engine       impl.EngineConfig
+	Includes     []string
 	StartupProbe ch.StartupProbeConfig
 	PromAddr     string
 }
@@ -45,10 +44,9 @@ func Command() *cli.Command {
 		Flags: Flags,
 		Action: func(ctx *cli.Context) error {
 			var (
-				logger       = slogctx.FromCtx(ctx.Context)
-				path         = ctx.Args().Get(0)
-				templatePath = ctx.String("template-path")
-				vars         = utils.MergeMaps(
+				logger = slogctx.FromCtx(ctx.Context)
+				path   = ctx.Args().Get(0)
+				vars   = utils.MergeMaps(
 					utils.ParseKeyValuesWithPrefix(os.Environ(), "=", "AGT__VAR__"),
 					utils.ParseKeyValues(ctx.StringSlice("var"), "="),
 				)
@@ -71,17 +69,7 @@ func Command() *cli.Command {
 				return err
 			}
 
-			u, err := url.Parse(path)
-
-			if err != nil {
-				return err
-			}
-
-			if len(templatePath) == 0 {
-				u.Path = filepath.Dir(u.Path)
-			}
-
-			tmpl, err := utils.LoadTemplates(sigCtx, u)
+			tmpl, err := utils.LoadTemplates(sigCtx, path, conf.Includes)
 
 			if err != nil {
 				return err
